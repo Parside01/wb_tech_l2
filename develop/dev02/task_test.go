@@ -57,6 +57,12 @@ func TestUnpackString(t *testing.T) {
 			expect:  "qwe44444",
 			wantErr: false,
 		},
+		{
+			name:    "Unicode with escape",
+			input:   "кк\\л5",
+			expect:  "ккллллл",
+			wantErr: false,
+		},
 	}
 
 	for _, tc := range tt {

@@ -85,6 +85,24 @@ func UnpackString(str string) (string, error) {
 			insertLetter = runes[i]
 			insertCount = 1
 		}
+
+		numBuilder.Reset()
+		for i+1 < len(runes) && unicode.IsDigit(runes[i+1]) {
+			numBuilder.WriteRune(runes[i+1])
+			i++
+		}
+
+		if numBuilder.Len() > 0 {
+			num, err := strconv.ParseInt(numBuilder.String(), 10, 32)
+			if err != nil {
+				return "", err
+			}
+			insertCount = int(num)
+		}
+
+		if insertCount > 0 {
+			result.WriteString(strings.Repeat(string(insertLetter), insertCount))
+		}
 	}
 	return result.String(), nil
 }
