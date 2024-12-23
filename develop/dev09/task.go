@@ -28,6 +28,10 @@ type WgetConfig struct {
 
 var config = &WgetConfig{}
 
+// Суть простая, указываем папку(опционально) и url.
+// Программа просто скачивает html и все css, js, img штуки.
+// => для каких-т сложных сайтов не будет работать. (wget для них тоже не работает как надо)
+
 func main() {
 	flag.Usage = func() {
 		log.Fatal("Usage: wget [url]")
