@@ -1,29 +1,41 @@
 package transport
 
 import (
-	"github.com/Parside01/dev11/internal/repository"
 	"github.com/Parside01/dev11/internal/service"
 	"net/http"
 )
 
 type CreateEventHandler interface {
-	CreateEvenHandler(w http.ResponseWriter, r *http.Request)
+	CreateEvent(w http.ResponseWriter, r *http.Request)
 }
 
 type createEventHandler struct {
 	service service.EventService
 }
 
-func NewCreateHandler(repo *repository.UserRepository) CreateEventHandler {
+func NewCreateHandler(eventService service.EventService) CreateEventHandler {
 	return &createEventHandler{
-		repo: repo,
+		service: eventService,
 	}
 }
 
-func (h *createEventHandler) CreateEvenHandler(w http.ResponseWriter, r *http.Request) {
+func (h *createEventHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	data, err := PostDataFromRequest(r)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		badResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
+
+	event, err := EventFromPostData(data)
+	if err != nil {
+		badResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = h.service.CreateEvent(r.Context(), data.UserID, event)
+	if err != nil {
+		badResponse(w, http.StatusInternalServerError, err.Error())
+	}
+
+	successResponse(w, http.StatusOK)
 }

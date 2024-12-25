@@ -6,12 +6,13 @@ import (
 )
 
 type Event struct {
-	Data        time.Time
+	Date        time.Time
 	Title       string `json:"title,omitempty"` // В задании ничего не было про id для event, так что пусть уникальным будет заголовок.
 	Description string `json:"description"`     // Может быть пустым.
 }
 
 // UnmarshalJSON Та самая вспомогательная функция для десериализации, заодно валидации.
+// Не используются(.
 func (e *Event) UnmarshalJSON(data []byte) error {
 	alias := &struct {
 		Data string `json:"data,omitempty"`
@@ -25,7 +26,7 @@ func (e *Event) UnmarshalJSON(data []byte) error {
 	}
 
 	if alias.Data == "" {
-		e.Data = time.Unix(0, 0)
+		e.Date = time.Unix(0, 0)
 		return nil
 	}
 
@@ -34,7 +35,7 @@ func (e *Event) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	e.Data = parsed
+	e.Date = parsed
 	return nil
 }
 
@@ -44,7 +45,7 @@ func (e *Event) MarshalJSON() ([]byte, error) {
 		*Event
 	}{
 		Event: e,
-		Data:  e.Data.Format(time.RFC3339),
+		Data:  e.Date.Format(time.RFC3339),
 	}
 	return json.Marshal(alias)
 }

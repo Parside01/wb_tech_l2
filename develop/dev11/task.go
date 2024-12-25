@@ -1,5 +1,15 @@
 package main
 
+import (
+	"github.com/Parside01/dev11/internal/repository"
+	service "github.com/Parside01/dev11/internal/service"
+	"github.com/Parside01/dev11/internal/transport"
+	"github.com/joho/godotenv"
+	"log"
+	"net/http"
+	"os"
+)
+
 /*
 === HTTP server ===
 
@@ -22,6 +32,30 @@ package main
 	4. Код должен проходить проверки go vet и golint.
 */
 
-func main() {
+func init() {
+	_ = godotenv.Load(".env")
+}
 
+func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	repo := repository.NewUserRepository()
+	s := service.NewEventService(repo)
+	u := service.NewUserService(repo)
+
+	http.Handle("/create_user", transport.LogMiddleware(http.HandlerFunc(transport.NewUserCreateHandler(u).CreateUser)))
+	http.Handle("/create_event", transport.LogMiddleware(http.HandlerFunc(transport.NewCreateHandler(s).CreateEvent)))
+	http.Handle("/update_event", transport.LogMiddleware(http.HandlerFunc(transport.NewUpdateHandler(s).UpdateEvent)))
+	http.Handle("/delete_event", transport.LogMiddleware(http.HandlerFunc(transport.NewDeleteEventHandler(s).DeleteEvent)))
+
+	http.Handle("/events_for_day", transport.LogMiddleware(http.HandlerFunc(transport.NewEventsForDayHandler(s).EventsForDay)))
+	http.Handle("/events_for_week", transport.LogMiddleware(http.HandlerFunc(transport.NewEventsForWeekHandler(s).EventsForWeek)))
+	http.Handle("/events_for_month", transport.LogMiddleware(http.HandlerFunc(transport.NewEventsForMonthHandler(s).EventsForMonth)))
+
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal(err)
+	}
 }

@@ -14,6 +14,7 @@ var (
 )
 
 type UserRepository interface {
+	CreateUser(ctx context.Context, userId int) (*entity.User, error)
 	AddEventToUser(ctx context.Context, userId int, event *entity.Event) error
 	UpdateEvent(ctx context.Context, userId int, event *entity.Event) error
 	DeleteEvent(ctx context.Context, userId int, event *entity.Event) error
@@ -32,6 +33,23 @@ func NewUserRepository() UserRepository {
 	}
 }
 
+func (r *userRepository) CreateUser(ctx context.Context, userId int) (*entity.User, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+		r.mutex.Lock()
+		defer r.mutex.Unlock()
+
+		user := &entity.User{
+			ID:     userId,
+			Events: make(map[time.Time][]*entity.Event),
+		}
+		r.users[userId] = user
+		return user, nil
+	}
+}
+
 func (r *userRepository) AddEventToUser(ctx context.Context, userId int, event *entity.Event) error {
 	select {
 	case <-ctx.Done():
@@ -45,7 +63,7 @@ func (r *userRepository) AddEventToUser(ctx context.Context, userId int, event *
 			return ErrUserNotFound
 		}
 
-		user.Events[event.Data] = append(user.Events[event.Data], event)
+		user.Events[event.Date] = append(user.Events[event.Date], event)
 		return nil
 	}
 }
@@ -65,7 +83,7 @@ func (r *userRepository) UpdateEvent(ctx context.Context, userId int, event *ent
 			return ErrUserNotFound
 		}
 
-		events, ok := user.Events[event.Data]
+		events, ok := user.Events[event.Date]
 		if !ok {
 			return ErrEventNotFound
 		}
@@ -73,7 +91,7 @@ func (r *userRepository) UpdateEvent(ctx context.Context, userId int, event *ent
 		found := false
 		for i := range events {
 			if events[i].Title == event.Title {
-				user.Events[event.Data][i] = event
+				user.Events[event.Date][i] = event
 				found = true
 			}
 		}
@@ -97,14 +115,14 @@ func (r *userRepository) DeleteEvent(ctx context.Context, userId int, event *ent
 			return ErrUserNotFound
 		}
 
-		events, ok := user.Events[event.Data]
+		events, ok := user.Events[event.Date]
 		if !ok {
 			return ErrEventNotFound
 		}
 
 		for i := range events {
 			if events[i].Title == event.Title {
-				user.Events[event.Data] = append(events[:i], events[i+1:]...)
+				user.Events[event.Date] = append(events[:i], events[i+1:]...)
 				return nil
 			}
 		}
